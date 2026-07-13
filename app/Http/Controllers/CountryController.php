@@ -34,24 +34,33 @@ public function sync()
 
     foreach ($data[1] as $item) {
 
-        Country::updateOrCreate(
-            [
-                'country_code' => $item['iso2Code']
-            ],
-            [
-                'country_name' => $item['name'],
-                'capital' => '',
-                'region' => $item['region']['value'],
-                'currency' => '',
-                'currency_code' => '',
-                'population' => 0,
-                'flag' => '',
-                'latitude' => null,
-                'longitude' => null,
-            ]
-        );
-
+    // Lewati data yang bukan negara
+    if (
+        empty($item['capitalCity']) ||
+        $item['region']['value'] === 'Aggregates'
+    ) {
+        continue;
     }
+
+    Country::updateOrCreate(
+        [
+            'country_code' => $item['iso2Code']
+        ],
+        [
+            'country_name' => $item['name'],
+            'iso3' => $item['id'],
+            'capital' => $item['capitalCity'],
+            'region' => $item['region']['value'],
+            'currency' => '',
+            'currency_code' => '',
+            'population' => null,
+            'flag' => '',
+            'latitude' => null,
+            'longitude' => null,
+        ]
+    );
+
+}
 
     return redirect()->route('countries')
         ->with('success', 'Data negara berhasil diambil dari World Bank.');

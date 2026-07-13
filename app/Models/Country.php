@@ -9,6 +9,7 @@ class Country extends Model
     protected $fillable = [
     'country_name',
     'country_code',
+    'iso3',
     'capital',
     'region',
     'currency',
@@ -19,4 +20,8 @@ class Country extends Model
     'longitude'
 ];
 
+    public function economicData()
+    {
+        return $this->hasMany(EconomicData::class);
+    }
 }
