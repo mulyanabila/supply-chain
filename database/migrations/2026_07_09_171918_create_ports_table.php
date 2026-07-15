@@ -11,10 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ports', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+        Schema::table('ports', function (Blueprint $table) {
+
+    $table->foreignId('country_id')->constrained()->cascadeOnDelete();
+
+    $table->string('port_name');
+
+    $table->string('city')->nullable();
+
+    $table->double('latitude');
+
+    $table->double('longitude');
+
+    $table->string('type')->default('Seaport');
+
+    $table->string('status')->default('Normal');
+
+});
     }
 
     /**

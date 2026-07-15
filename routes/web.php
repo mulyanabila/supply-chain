@@ -7,6 +7,8 @@ use App\Http\Controllers\CountryController;
 use App\Http\Controllers\EconomicDataController;
 use App\Http\Controllers\WeatherController;
 use App\Http\Controllers\WorldBankController;
+use App\Http\Controllers\NewsController;
+use App\Http\Controllers\CurrencyController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -26,6 +28,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/countries', [CountryController::class, 'index'])->name('countries');
     Route::get('/countries/sync', [CountryController::class, 'sync'])->name('countries.sync');
+    Route::get('/countries/{country_name}', [CountryController::class, 'show'])->name('countries.show');
 
     Route::get('/economic-data', [EconomicDataController::class, 'index'])
     ->name('economic.index');
@@ -41,6 +44,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/worldbank/{countryCode}',[WorldBankController::class,'getEconomicData'])
     ->middleware('auth')
     ->name('worldbank');
+
+    Route::get('/news/{country}',[NewsController::class,'getNews'])
+    ->name('news');
+
+    Route::get('/currency/{code}',[CurrencyController::class,'getCurrency'])
+    ->middleware('auth')
+    ->name('currency');
 });
 
 require __DIR__.'/auth.php';

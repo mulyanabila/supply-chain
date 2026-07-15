@@ -22,4 +22,17 @@ class WeatherController extends Controller
             $response->json()['current']
         );
     }
+
+    public static function getWeatherData($lat,$lon)
+{
+    $url="https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=weather_code";
+
+    $response = Http::withoutVerifying()->get($url);
+
+    if(!$response->successful()){
+        return null;
+    }
+
+    return $response->json()['current'];
+}
 }

@@ -9,29 +9,29 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-{
-    Schema::create('risk_scores', function (Blueprint $table) {
+     public function up(): void
+    {
+        Schema::create('risk_scores', function (Blueprint $table) {
 
-        $table->id();
+            $table->id();
 
-        $table->foreignId('country_id')
-              ->constrained()
-              ->onDelete('cascade');
+            $table->foreignId('country_id')->constrained()->cascadeOnDelete();
 
-        $table->decimal('economic_score',5,2)->default(0);
-        $table->decimal('news_score',5,2)->default(0);
-        $table->decimal('weather_score',5,2)->default(0);
-        $table->decimal('final_score',5,2)->default(0);
+            $table->double('weather_score')->default(0);
 
-        $table->enum('risk_level',[
-            'Low',
-            'Medium',
-            'High'
-        ])->default('Low');
+            $table->double('inflation_score')->default(0);
 
-        $table->timestamps();
-    });
+            $table->double('news_score')->default(0);
+
+            $table->double('currency_score')->default(0);
+
+            $table->double('total_score')->default(0);
+
+            $table->string('risk_level')->default('Low');
+
+            $table->timestamps();
+
+        });
 }
     /**
      * Reverse the migrations.
