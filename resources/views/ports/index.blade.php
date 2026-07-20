@@ -120,7 +120,7 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
         <li><a href="{{ route('countries') }}"><i class="bi bi-globe2"></i> Countries</a></li>
         <li><a href="{{ route('ports') }}"><i class="bi bi-geo-alt"></i> Ports</a></li>
         <li><a href="{{ route('shipment') }}"><i class="bi bi-truck"></i> Shipment</a></li>
-        <li class="active"><a href="{{ route('weather.monitoring') }}"><i class="bi bi-cloud-sun"></i> Weather</a></li>
+        <lia href="{{ route('weather.monitoring') }}"><i class="bi bi-cloud-sun"></i> Weather</a></li>
         <li><a href="{{ route('news.index') }}"><i class="bi bi-newspaper"></i> News</a></li>
         <li><a href="{{ route('watchlist.index') }}"><i class="bi bi-bookmark-star"></i> Watchlist country</a></li>
         <li><a href="{{ route('comparison.index') }}"><i class="bi bi-bar-chart"></i>Country Comparison</a></li>

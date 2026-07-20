@@ -106,73 +106,31 @@ body{
 
 <body>
 
-<div class="p-6">
-
-    <div class="sidebar">
-
+<div class="sidebar">
     <div class="logo">
         🌍 GSC RISK 
-            INTELLIGENCE
+        INTELLIGENCE
     </div>
-
     <ul>
-
-        <li>
-            <a href="{{ route('dashboard') }}">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-        </li>
-
-        <li>
-            <a href="{{ route('countries') }}">
-                <i class="bi bi-globe2"></i>
-                Countries
-            </a>
-        </li>
-
-        <li class="active">
-            <a href="{{ route('ports') }}">
-                <i class="bi bi-geo-alt"></i>
-                Ports
-            </a>
-        </li>
-
-        <li>
-            <a href="{{ route('weather.monitoring') }}">
-                <i class="bi bi-cloud-sun"></i>
-                Weather
-            </a>
-        </li>
-
-        <li>
-            <a href="{{ route('news.index') }}">
-                <i class="bi bi-newspaper"></i>
-                News
-            </a>
-        </li>
-
-        <li>
-            <a href="{{ route('watchlist.index') }}">
-                <i class="bi bi-bookmark-star"></i>
-                Watchlist Country
-            </a>
-        </li>
-
+        <li><a href="{{ route('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+        <li><a href="{{ route('countries') }}"><i class="bi bi-globe2"></i> Countries</a></li>
+        <li><a href="{{ route('ports') }}"><i class="bi bi-geo-alt"></i> Ports</a></li>
+        <li><a href="{{ route('shipment') }}"><i class="bi bi-truck"></i> Shipment</a></li>
+        <li class="active"><a href="{{ route('weather.monitoring') }}"><i class="bi bi-cloud-sun"></i> Weather</a></li>
+        <li><a href="{{ route('news.index') }}"><i class="bi bi-newspaper"></i> News</a></li>
+        <li><a href="{{ route('watchlist.index') }}"><i class="bi bi-bookmark-star"></i> Watchlist country</a></li>
+        <li><a href="{{ route('comparison.index') }}"><i class="bi bi-bar-chart"></i>Country Comparison</a></li>
         <li>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-
                 <button type="submit" style="background:none; border:none; color:white; padding:14px; text-align:left; width:100%; border-radius:10px;">
-                    <i class="bi bi-box-arrow-right"></i>
-                    Logout
+                    <i class="bi bi-box-arrow-right"></i> Logout
                 </button>
             </form>
         </li>
-
     </ul>
-
 </div>
+
 <div class="content">
 
     <!-- Header -->
