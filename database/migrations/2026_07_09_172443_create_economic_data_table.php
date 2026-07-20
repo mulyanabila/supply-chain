@@ -18,6 +18,8 @@ return new class extends Migration
 
             $table->year('year');
 
+            $table->unique(['country_id', 'year']);
+
             $table->decimal('gdp',20,2)->nullable();
 
             $table->decimal('inflation',10,2)->nullable();

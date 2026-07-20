@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 
 class WorldBankController extends Controller
 {
-    private function getIndicator($countryCode, $indicator)
+    public function getIndicator($countryCode, $indicator)
     {
         $url = "https://api.worldbank.org/v2/country/$countryCode/indicator/$indicator?format=json&mrv=10";
 

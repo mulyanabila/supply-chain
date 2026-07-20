@@ -63,7 +63,7 @@ class SyncEconomicData extends Command
     /**
      * Sinkronisasi seluruh indikator
      */
-    private function syncCountry($country)
+private function syncCountry($country)
 {
     $gdp = $this->getIndicator(
         $country->iso3,
@@ -85,65 +85,84 @@ class SyncEconomicData extends Command
         'NE.IMP.GNFS.CD'
     );
 
-    EconomicData::updateOrCreate(
+    // Ambil semua tahun yang ada
+    $years = array_unique(array_merge(
+        array_keys($gdp),
+        array_keys($inflation),
+        array_keys($exports),
+        array_keys($imports)
+    ));
 
-        [
-            'country_id' => $country->id,
-            'year' => date('Y')
-        ],
+    rsort($years);
 
-        [
-            'gdp' => $gdp,
-            'inflation' => $inflation,
-            'exports' => $exports,
-            'imports' => $imports
-        ]
+    // Simpan hanya 5 tahun terakhir
+    $years = array_slice($years, 0, 5);
 
-    );
+    foreach ($years as $year) {
+
+        EconomicData::updateOrCreate(
+
+            [
+                'country_id' => $country->id,
+                'year' => $year
+            ],
+
+            [
+                'gdp' => $gdp[$year] ?? null,
+                'inflation' => $inflation[$year] ?? null,
+                'exports' => $exports[$year] ?? null,
+                'imports' => $imports[$year] ?? null,
+            ]
+
+        );
+    }
 }
 
-    /**
-     * Mengambil indikator dari World Bank
-     */
-    private function getIndicator($iso3, $indicator)
+private function getIndicator($iso3, $indicator)
 {
     $url = "https://api.worldbank.org/v2/country/{$iso3}/indicator/{$indicator}";
 
     try {
 
         $response = Http::withoutVerifying()
-            ->timeout(30)
+            ->timeout(60)
             ->get($url, [
                 'format' => 'json',
                 'per_page' => 5
             ]);
 
         if (!$response->successful()) {
-            return null;
+            return [];
         }
 
         $json = $response->json();
 
         if (!isset($json[1])) {
-            return null;
+            return [];
         }
+
+        $data = [];
 
         foreach ($json[1] as $row) {
 
-            if (!empty($row['value'])) {
+            if (
+                !empty($row['date']) &&
+                $row['value'] !== null
+            ) {
 
-                return $row['value'];
+                $data[$row['date']] = $row['value'];
 
             }
 
         }
 
-        return null;
+        return $data;
 
     } catch (\Exception $e) {
 
-        return null;
+        return [];
 
     }
 }
+
 }

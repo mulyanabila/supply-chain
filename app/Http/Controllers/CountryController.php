@@ -27,13 +27,27 @@ class CountryController extends Controller
 
     $riskLevel = $country->riskScore->risk_level ?? 'Low Risk';
 
+    // Data tren riwayat 5 tahun
+    $historicalEconomic = $country?->economicData()
+        ->orderBy('year', 'desc')
+        ->take(5)
+        ->get()
+        ->sortBy('year');
+
+    $gdpTrend = json_encode($historicalEconomic?->pluck('gdp')->toArray() ?? []);
+    $inflationTrend = json_encode($historicalEconomic?->pluck('inflation')->toArray() ?? []);
+    $trendYears = json_encode($historicalEconomic?->pluck('year')->toArray() ?? []);
+
     return view('countries.index',compact(
         'countries',
         'country',
         'economic',
         'exchangeRate',
         'riskScore',
-        'riskLevel'
+        'riskLevel',
+        'gdpTrend',
+        'inflationTrend',
+        'trendYears'
     ));
 }
 
@@ -52,21 +66,19 @@ public function sync()
     // ===========================
 
     $rest = Http::withoutVerifying()
-    ->get('https://restcountries.com/v3.1/all?fields=name,cca2,currencies,population,flags,latlng')
+    ->withHeaders([
+        'Accept' => 'application/json',
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+    ])
+    ->get('https://api.allorigins.win/raw?url=https://restcountries.com/v3.1/all') 
     ->json();
-        dd($rest);
-
-    $restCountries = [];
 
     foreach($rest as $country){
-
         $code = $country['cca2'] ?? null;
-
         if(!$code){
             continue;
         }
-
-        $restCountries[$code] = $country;
+        $restCountries[strtoupper($code)] = $country;
     }
 
     foreach($wb[1] as $item){
@@ -78,44 +90,29 @@ public function sync()
             continue;
         }
 
-        $extra = $restCountries[$item['iso2Code']] ?? [];
+        $iso2 = strtoupper($item['iso2Code']);
+        $extra = $restCountries[$iso2] ?? [];
+
+        $updateData = [
+            'country_name'=>$item['name'],
+            'iso3'=>$item['id'],
+            'capital'=>$item['capitalCity'],
+            'region'=>$item['region']['value'],
+        ];
+
+        if (!empty($extra)) {
+            $updateData['currency'] = array_key_first($extra['currencies'] ?? []);
+            $updateData['currency_code'] = array_key_first($extra['currencies'] ?? []);
+            $updateData['population'] = $extra['population'] ?? null;
+            $updateData['flag'] = $extra['flags']['png'] ?? '';
+            $updateData['latitude'] = $extra['latlng'][0] ?? null;
+            $updateData['longitude'] = $extra['latlng'][1] ?? null;
+        }
 
         Country::updateOrCreate(
-
-            [
-                'country_code'=>$item['iso2Code']
-            ],
-
-            [
-
-                'country_name'=>$item['name'],
-
-                'iso3'=>$item['id'],
-
-                'capital'=>$item['capitalCity'],
-
-                'region'=>$item['region']['value'],
-
-                'currency'=>array_key_first(
-                    $extra['currencies'] ?? []
-                ),
-
-                'currency_code'=>array_key_first(
-                    $extra['currencies'] ?? []
-                ),
-
-                'population'=>$extra['population'] ?? null,
-
-                'flag'=>$extra['flags']['png'] ?? '',
-
-                'latitude'=>$extra['latlng'][0] ?? null,
-
-                'longitude'=>$extra['latlng'][1] ?? null,
-
-            ]
-
+            ['country_code' => $iso2],
+            $updateData
         );
-
     }
 
     return redirect()->route('countries')
@@ -130,6 +127,15 @@ public function show($country_name)
                 ->with('economicData', 'riskScore')
                 ->firstOrFail();
 
+                if (empty($country->population)) {
+        $wbController = new \App\Http\Controllers\WorldBankController();
+        $pop = $wbController->getIndicator($country->country_code, 'SP.POP.TOTL');
+        if ($pop) {
+            $country->population = $pop;
+            $country->save();
+        }
+    }
+
     $economic = $country->economicData()->latest('year')->first();
 
     $exchangeRate = CurrencyController::getRate($country->currency);
@@ -138,13 +144,27 @@ public function show($country_name)
 
     $riskLevel = $country->riskScore->risk_level ?? 'Low Risk';
 
+    // Data tren riwayat 5 tahun
+    $historicalEconomic = $country->economicData()
+        ->orderBy('year', 'desc')
+        ->take(5)
+        ->get()
+        ->sortBy('year');
+
+    $gdpTrend = json_encode($historicalEconomic->pluck('gdp')->toArray());
+    $inflationTrend = json_encode($historicalEconomic->pluck('inflation')->toArray());
+    $trendYears = json_encode($historicalEconomic->pluck('year')->toArray());
+
     return view('countries.index', compact(
         'countries',
         'country',
         'economic',
         'exchangeRate',
         'riskScore',
-        'riskLevel'
+        'riskLevel',
+        'gdpTrend',
+        'inflationTrend',
+        'trendYears'
     ));
 }
 

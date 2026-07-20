@@ -13,4 +13,9 @@ class Weather extends Model
         'wind_speed',
         'storm_risk'
     ];
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
 }

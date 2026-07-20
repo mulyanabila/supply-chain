@@ -10,25 +10,31 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
-        Schema::table('ports', function (Blueprint $table) {
+{
+    Schema::create('ports', function (Blueprint $table) {
 
-    $table->foreignId('country_id')->constrained()->cascadeOnDelete();
+        $table->id();
 
-    $table->string('port_name');
+        $table->foreignId('country_id')
+            ->constrained()
+            ->cascadeOnDelete();
 
-    $table->string('city')->nullable();
+        $table->string('port_name');
 
-    $table->double('latitude');
+        $table->string('port_code')->nullable();
 
-    $table->double('longitude');
+        $table->string('city')->nullable();
 
-    $table->string('type')->default('Seaport');
+        $table->decimal('latitude',10,7)->nullable();
 
-    $table->string('status')->default('Normal');
+        $table->decimal('longitude',10,7)->nullable();
 
-});
-    }
+        $table->string('type')->nullable();
+
+        $table->timestamps();
+
+    });
+}
 
     /**
      * Reverse the migrations.

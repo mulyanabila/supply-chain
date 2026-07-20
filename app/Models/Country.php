@@ -35,4 +35,9 @@ public function ports()
     return $this->hasMany(Port::class);
 }
 
+public function watchlists()
+{
+    return $this->hasMany(Watchlist::class);
+}
+
 }
