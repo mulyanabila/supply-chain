@@ -87,6 +87,7 @@
         <li class="active"><a href="{{ route('weather.monitoring') }}"><i class="bi bi-cloud-sun"></i> Weather</a></li>
         <li><a href="{{ route('news.index') }}"><i class="bi bi-newspaper"></i> News</a></li>
         <li><a href="{{ route('watchlist.index') }}"><i class="bi bi-bookmark-star"></i> Watchlist country</a></li>
+        <li><a href="{{ route('comparison.index') }}"><i class="bi bi-bar-chart"></i>Country Comparison</a></li>
         <li>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf

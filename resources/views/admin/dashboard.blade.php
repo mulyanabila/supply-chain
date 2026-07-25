@@ -83,17 +83,12 @@
         <!-- Sidebar Navigation -->
         <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
             <!-- MAIN MENU -->
-            <div>
+             <div>
                 <span class="px-3 text-[10px] font-bold text-slate-500 tracking-wider uppercase block mb-3">Main Menu</span>
                 <div class="space-y-1">
-                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-brand-blue text-white font-medium text-sm transition-all duration-200 shadow-md shadow-brand-blue/20">
+                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-emerald-700 text-white font-medium text-sm transition-all duration-200 shadow-md shadow emerald-700/20">
                         <i class="bi bi-speedometer2 text-base"></i>
                         <span>Dashboard</span>
-                    </a>
-        
-                    <a href="{{ route('admin.users') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white text-slate-400 text-sm font-medium transition-all duration-200">
-                        <i class="bi bi-people text-base"></i>
-                        <span>Users</span>
                     </a>
 
                     <a href="{{ route('admin.ports') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white text-slate-400 text-sm font-medium transition-all duration-200">
@@ -105,8 +100,25 @@
                         <i class="bi bi-blockquote-left text-base"></i>
                         <span>Article Analyst</span>
                     </a>
+                    
+                    <a href="{{ route('admin.users') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white text-slate-400 text-sm font-medium transition-all duration-200">
+                        <i class="bi bi-people text-base"></i>
+                        <span>Users & Roles</span>
+                    </a>
                 </div>
             </div>
+
+                <!-- BOTTOM MENU -->
+                <div class="mt-auto pt-6 border-t border-slate-800">
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button type="submit"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-600 hover:text-white transition-all duration-200">
+                            <i class="bi bi-box-arrow-right text-base"></i>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
 
         <!-- Sidebar Footer / System Status -->
     </aside>
@@ -121,6 +133,8 @@
                 <p class="text-slate-500 text-xs font-medium">Global Supply Chain Risk Intelligence Platform</p>
             </div>
         </header>
+
+        
 
         <!-- DASHBOARD CONTAINER -->
         <main class="flex-1 p-8 space-y-8 overflow-y-auto">
@@ -406,33 +420,32 @@
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    <th class="py-2.5">Country</th>
-                                    <th class="py-2.5">Region</th>
-                                    <th class="py-2.5">Risk Score</th>
-                                    <th class="py-2.5 text-right">Trend</th>
+                                    <th class="py-2.5 w-[32%]">Country</th>
+                                    <th class="py-2.5 w-[38%]">Region</th>
+                                    <th class="py-2.5 w-[18%]">Risk Score</th>
+                                    <th class="py-2.5 w-[12%] text-right">Trend</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
                                 @foreach($topHighRisk as $country)
                                 <tr>
-                                    <td class="py-3 flex items-center gap-2">
-                                        <span class="text-lg">
-                                            @if($country['code'] === 'ye') 🇾🇪
-                                            @elseif($country['code'] === 'sy') 🇸🇾
-                                            @elseif($country['code'] === 'ht') 🇭🇹
-                                            @elseif($country['code'] === 've') 🇻🇪
-                                            @elseif($country['code'] === 'af') 🇦🇫
-                                            @else 🏳️ @endif
-                                        </span>
-                                        <span class="text-slate-800 font-bold">{{ $country['name'] }}</span>
+                                    <td class="py-3">
+                                        <div class="flex items-center gap-2">
+                                            <img src="https://flagcdn.com/20x15/{{ strtolower($country['code']) }}.png" alt="{{ $country['name'] }} flag" class="inline-block border border-slate-100 rounded-sm flex-shrink-0" style="width: 20px; height: 15px; object-fit: cover;">
+                                            <span class="text-slate-800 font-bold truncate max-w-[85px]" title="{{ $country['name'] }}">{{ $country['name'] }}</span>
+                                        </div>
                                     </td>
-                                    <td class="py-3 text-slate-500 font-medium">{{ $country['region'] }}</td>
-                                    <td class="py-3 font-bold text-slate-800">{{ $country['score'] }} <span class="text-[10px] font-medium text-slate-400">/ 100</span></td>
+                                    <td class="py-3 text-slate-500 font-medium">
+                                        <span class="truncate max-w-[120px] block" title="{{ $country['region'] }}">{{ $country['region'] }}</span>
+                                    </td>
+                                    <td class="py-3 font-bold text-slate-800 whitespace-nowrap">
+                                        {{ $country['score'] }} <span class="text-[10px] font-medium text-slate-400">/ 100</span>
+                                    </td>
                                     <td class="py-3 text-right text-red-500 font-bold">
-                                        <span class="flex items-center justify-end gap-0.5">
+                                        <div class="flex items-center justify-end gap-0.5">
                                             <i class="bi bi-arrow-up-short text-sm leading-none"></i>
                                             <span>{{ $country['trend'] }}</span>
-                                        </span>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach

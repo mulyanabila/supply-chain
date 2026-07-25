@@ -13,56 +13,66 @@ class PortController extends Controller
     {
         $countries = Country::orderBy('country_name')->get();
 
-        $ports = Port::with('country');
+        // Get distinct types and statuses for dropdown filters
+        $portTypes = Port::select('type')->distinct()->whereNotNull('type')->orderBy('type')->pluck('type');
+        $portStatuses = ['Active', 'Busy', 'Congested', 'Maintenance', 'Closed'];
 
-        // Filter berdasarkan negara
+        $portsQuery = Port::with('country');
+
+        // Filter by country
         if ($request->filled('country')) {
-
-            $country = Country::where(
-                'country_name',
-                $request->country
-            )->first();
-
+            $country = Country::where('country_name', $request->country)->first();
             if ($country) {
-
-                $ports->where(
-                    'country_id',
-                    $country->id
-                );
+                $portsQuery->where('country_id', $country->id);
             }
         }
 
-        // Search nama pelabuhan
-        if ($request->filled('search')) {
-
-            $ports->where(
-                'port_name',
-                'LIKE',
-                '%' . $request->search . '%'
-            );
+        // Filter by type
+        if ($request->filled('type')) {
+            $portsQuery->where('type', $request->type);
         }
 
-        $ports = $ports->get();
+        // Filter by status mapped from operational status to database size status
+        if ($request->filled('status')) {
+            $statusMap = [
+                'Active' => 'Large',
+                'Busy' => 'Medium',
+                'Congested' => 'Small',
+                'Maintenance' => 'Very Small',
+                'Closed' => 'Closed'
+            ];
+            $mappedStatus = $statusMap[$request->status] ?? $request->status;
+            $portsQuery->where('status', $mappedStatus);
+        }
+
+        // Search port name
+        if ($request->filled('search')) {
+            $portsQuery->where('port_name', 'LIKE', '%' . $request->search . '%');
+        }
+
+        $ports = $portsQuery->get();
         
-$totalPorts = $ports->count();
-
-$totalCountries = $ports
-    ->pluck('country_id')
-    ->unique()
-    ->count();
-
-$totalLocations = $ports
-    ->whereNotNull('latitude')
-    ->whereNotNull('longitude')
-    ->count();
+        // Calculate dynamic KPIs based on filtered ports
+        $totalPorts = $ports->count();
+        $activePorts = $ports->filter(fn($p) => in_array($p->status, ['Large', 'Active', 'Normal']))->count();
+        $busyPorts = $ports->filter(fn($p) => in_array($p->status, ['Medium', 'Busy']))->count();
+        
+        // We define "High Risk" as Busy (Medium), Closed (Closed), or Maintenance (Very Small) status
+        $highRiskPorts = $ports->filter(fn($p) => in_array($p->status, ['Medium', 'Very Small', 'Closed', 'Busy', 'Maintenance']))->count();
+        
+        $countriesCovered = $ports->pluck('country_id')->unique()->count();
 
         return view('ports.index', compact(
-    'ports',
-    'countries',
-    'totalPorts',
-    'totalCountries',
-    'totalLocations'
-));
+            'ports',
+            'countries',
+            'portTypes',
+            'portStatuses',
+            'totalPorts',
+            'activePorts',
+            'busyPorts',
+            'highRiskPorts',
+            'countriesCovered'
+        ));
     }
 
     public function sync()
