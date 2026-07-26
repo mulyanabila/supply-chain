@@ -337,7 +337,9 @@ class AdminDashboardController extends Controller
             $articlesQuery->where(function($q) use ($search) {
                 $q->where('title', 'LIKE', '%' . $search . '%')
                   ->orWhere('content', 'LIKE', '%' . $search . '%')
-                  ->orWhere('author', 'LIKE', '%' . $search . '%');
+                  ->orWhere('author', 'LIKE', '%' . $search . '%')
+                  ->orWhere('source', 'LIKE', '%' . $search . '%')
+                  ->orWhere('country', 'LIKE', '%' . $search . '%');
             });
         }
 
@@ -355,9 +357,9 @@ class AdminDashboardController extends Controller
         }
 
         // Paginated Articles List
-        $articlesList = $articlesQuery->paginate(10)->withQueryString();
+        $articlesList = $articlesQuery->orderByDesc('id')->paginate(10)->withQueryString();
 
-        // Map list details and calculate sentiments dynamically
+        // Map list details and calculate sentiments
         $formattedArticles = [];
         $sentimentDistribution = ['Positive' => 0, 'Negative' => 0, 'Neutral' => 0];
         
@@ -367,8 +369,12 @@ class AdminDashboardController extends Controller
         
         foreach ($allArticlesForStats as $art) {
             // Sentiment
-            $s = self::getArticleSentiment($art->title);
-            $sentimentDistribution[$s]++;
+            $s = $art->sentiment ?: self::getArticleSentiment($art->title);
+            if (isset($sentimentDistribution[$s])) {
+                $sentimentDistribution[$s]++;
+            } else {
+                $sentimentDistribution['Neutral']++;
+            }
             
             // Category count
             $cat = $art->category ?: 'General';
@@ -378,70 +384,38 @@ class AdminDashboardController extends Controller
             $articlesByCategory[$cat]++;
         }
         
+        $countriesMap = [
+            'United States' => '🇺🇸', 'Germany' => '🇩🇪', 'Japan' => '🇯🇵', 'Egypt' => '🇪🇬', 'Taiwan' => '🇹🇼',
+            'India' => '🇮🇳', 'China' => '🇨🇳', 'Australia' => '🇦🇺', 'United Kingdom' => '🇬🇧', 'Canada' => '🇨🇦',
+            'Singapore' => '🇸🇬', 'Brazil' => '🇧🇷', 'France' => '🇫🇷'
+        ];
+
         foreach ($articlesList as $art) {
-            $s = self::getArticleSentiment($art->title);
-            
-            // Map country
-            $countryName = 'Global';
-            $flag = '🌍';
-            $titleLower = strtolower($art->title);
-            $contentLower = strtolower($art->content);
-            
-            $countriesMap = [
-                'united states' => ['name' => 'United States', 'flag' => '🇺🇸'],
-                'germany' => ['name' => 'Germany', 'flag' => '🇩🇪'],
-                'japan' => ['name' => 'Japan', 'flag' => '🇯🇵'],
-                'egypt' => ['name' => 'Egypt', 'flag' => '🇪🇬'],
-                'taiwan' => ['name' => 'Taiwan', 'flag' => '🇹🇼'],
-                'india' => ['name' => 'India', 'flag' => '🇮🇳'],
-                'china' => ['name' => 'China', 'flag' => '🇨🇳'],
-                'australia' => ['name' => 'Australia', 'flag' => '🇦🇺'],
-                'uk' => ['name' => 'United Kingdom', 'flag' => '🇬🇧'],
-                'united kingdom' => ['name' => 'United Kingdom', 'flag' => '🇬🇧'],
-                'canada' => ['name' => 'Canada', 'flag' => '🇨🇦'],
-                'singapore' => ['name' => 'Singapore', 'flag' => '🇸🇬'],
-                'brazil' => ['name' => 'Brazil', 'flag' => '🇧🇷'],
-                'france' => ['name' => 'France', 'flag' => '🇫🇷'],
-            ];
-            
-            foreach ($countriesMap as $key => $details) {
-                if (strpos($titleLower, $key) !== false || strpos($contentLower, $key) !== false) {
-                    $countryName = $details['name'];
-                    $flag = $details['flag'];
-                    break;
-                }
-            }
-            
-            // Map thumbnail
-            $thumbnail = 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=150'; // default graph
-            $catLower = strtolower($art->category);
-            if (strpos($catLower, 'ship') !== false || strpos($catLower, 'port') !== false) {
-                $thumbnail = 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80&w=150';
-            } elseif (strpos($catLower, 'trade') !== false) {
-                $thumbnail = 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=150';
-            } elseif (strpos($catLower, 'risk') !== false || strpos($catLower, 'disrupt') !== false) {
-                $thumbnail = 'https://images.unsplash.com/photo-1594897030264-ab7d87efc473?auto=format&fit=crop&q=80&w=150';
-            } elseif (strpos($catLower, 'tech') !== false) {
-                $thumbnail = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=150';
-            }
+            $s = $art->sentiment ?: self::getArticleSentiment($art->title);
+            $country = $art->country ?: 'Global';
+            $flag = $countriesMap[$country] ?? '🌍';
             
             $formattedArticles[] = [
                 'id' => $art->id,
                 'title' => $art->title,
+                'content' => $art->content,
                 'content_summary' => \Illuminate\Support\Str::limit(strip_tags($art->content), 85),
                 'category' => $art->category ?: 'General',
-                'country' => $countryName,
+                'country' => $country,
                 'flag' => $flag,
                 'author' => $art->author ?: 'Staff Writer',
                 'published_date' => $art->published_at ? date('d M Y H:i', strtotime($art->published_at)) : 'Draft',
+                'published_at_raw' => $art->published_at ? date('Y-m-d\TH:i', strtotime($art->published_at)) : '',
                 'sentiment' => $s,
+                'risk_level' => $art->risk_level ?: 'Low',
                 'status' => $art->published_at ? 'Published' : 'Draft',
-                'thumbnail' => $thumbnail
+                'thumbnail' => $art->thumbnail ?: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=150',
+                'source' => $art->source ?: 'GSC Staff'
             ];
         }
 
         // Count of AI Sentiment Analyzed
-        $aiSentimentAnalyzedCount = Article::count(); // assume all are analyzed
+        $aiSentimentAnalyzedCount = Article::whereNotNull('sentiment')->whereNotNull('risk_level')->count();
 
         // Monthly Published Trend
         $publishedTrend = [];
@@ -472,5 +446,225 @@ class AdminDashboardController extends Controller
             'publishedMonthsJson',
             'categoriesList'
         ));
+    }
+
+    public function storeArticle(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'author' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+            'source' => 'nullable|string|max:255',
+            'sentiment' => 'nullable|string|max:50',
+            'risk_level' => 'nullable|string|max:50',
+            'status' => 'required|string|in:Draft,Published',
+            'thumbnail' => 'nullable|string|max:1000',
+        ]);
+
+        $publishedAt = $validated['status'] === 'Published' ? now() : null;
+
+        Article::create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'author' => $validated['author'] ?: 'Staff Writer',
+            'category' => $validated['category'] ?: 'General',
+            'country' => $validated['country'] ?: 'Global',
+            'source' => $validated['source'] ?: 'GSC Staff',
+            'sentiment' => $validated['sentiment'] ?: 'Neutral',
+            'risk_level' => $validated['risk_level'] ?: 'Low',
+            'published_at' => $publishedAt,
+            'thumbnail' => $validated['thumbnail'] ?: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=150',
+        ]);
+
+        return redirect()->route('admin.articles')->with('success', 'Article created successfully.');
+    }
+
+    public function updateArticle(Request $request, $id)
+    {
+        $article = Article::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'author' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+            'source' => 'nullable|string|max:255',
+            'sentiment' => 'nullable|string|max:50',
+            'risk_level' => 'nullable|string|max:50',
+            'status' => 'required|string|in:Draft,Published',
+            'thumbnail' => 'nullable|string|max:1000',
+        ]);
+
+        $publishedAt = $article->published_at;
+        if ($validated['status'] === 'Published' && !$publishedAt) {
+            $publishedAt = now();
+        } elseif ($validated['status'] === 'Draft') {
+            $publishedAt = null;
+        }
+
+        $article->update([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'author' => $validated['author'] ?: 'Staff Writer',
+            'category' => $validated['category'] ?: 'General',
+            'country' => $validated['country'] ?: 'Global',
+            'source' => $validated['source'] ?: 'GSC Staff',
+            'sentiment' => $validated['sentiment'] ?: 'Neutral',
+            'risk_level' => $validated['risk_level'] ?: 'Low',
+            'published_at' => $publishedAt,
+            'thumbnail' => $validated['thumbnail'] ?: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=150',
+        ]);
+
+        return redirect()->route('admin.articles')->with('success', 'Article updated successfully.');
+    }
+
+    public function destroyArticle($id)
+    {
+        $article = Article::findOrFail($id);
+        $article->delete();
+
+        return redirect()->route('admin.articles')->with('success', 'Article deleted successfully.');
+    }
+
+    public function importArticles()
+    {
+        $url = "https://news.google.com/rss/search?q=" . urlencode("economy OR trade OR supply chain OR logistics OR shipping") . "&hl=en-US&gl=US&ceid=US:en";
+        try {
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()->timeout(10)->get($url);
+            if ($response->successful()) {
+                $xml = simplexml_load_string($response->body());
+                if ($xml) {
+                    $importedCount = 0;
+                    foreach ($xml->channel->item as $item) {
+                        $title = (string)$item->title;
+                        $link = (string)$item->link;
+                        $pubDate = date('Y-m-d H:i:s', strtotime($item->pubDate));
+                        $desc = (string)$item->description;
+
+                        // Check duplicate
+                        if (Article::where('title', $title)->exists()) {
+                            continue;
+                        }
+
+                        // Parse source
+                        $source = "Google News";
+                        $parts = explode(" - ", $title);
+                        if (count($parts) > 1) {
+                            $source = array_pop($parts);
+                            $title = implode(" - ", $parts);
+                        }
+
+                        // Parse thumbnail
+                        $thumbnail = 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=150';
+                        if (preg_match('/<img[^>]+src="([^">]+)"/', $desc, $matches)) {
+                            $thumbnail = $matches[1];
+                        }
+
+                        // Detect category
+                        $lowerTitle = strtolower($title);
+                        $category = "Economy";
+                        if (str_contains($lowerTitle, 'logistic') || str_contains($lowerTitle, 'supply')) { $category = "Logistics"; }
+                        elseif (str_contains($lowerTitle, 'trade') || str_contains($lowerTitle, 'export') || str_contains($lowerTitle, 'import')) { $category = "Trade"; }
+                        elseif (str_contains($lowerTitle, 'ship') || str_contains($lowerTitle, 'port') || str_contains($lowerTitle, 'sea')) { $category = "Shipping"; }
+
+                        // Mapped Unsplash based on category if RSS image is not valid/found
+                        if (strpos($thumbnail, 'photo-1518241353330-0f7941c2d9b5') !== false || !$thumbnail) {
+                            if ($category === 'Shipping' || $category === 'Logistics') {
+                                $thumbnail = 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80&w=150';
+                            } elseif ($category === 'Trade') {
+                                $thumbnail = 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=150';
+                            }
+                        }
+
+                        // Detect country
+                        $countryName = 'Global';
+                        $countriesMap = [
+                            'united states' => 'United States', 'germany' => 'Germany', 'japan' => 'Japan',
+                            'egypt' => 'Egypt', 'taiwan' => 'Taiwan', 'india' => 'India', 'china' => 'China',
+                            'australia' => 'Australia', 'uk' => 'United Kingdom', 'united kingdom' => 'United Kingdom',
+                            'canada' => 'Canada', 'singapore' => 'Singapore', 'brazil' => 'Brazil', 'france' => 'France',
+                        ];
+                        foreach ($countriesMap as $key => $name) {
+                            if (str_contains($lowerTitle, $key)) {
+                                $countryName = $name;
+                                break;
+                            }
+                        }
+
+                        // Strip HTML from snippet
+                        $snippet = strip_tags($desc);
+                        $snippet = \Illuminate\Support\Str::limit($snippet, 200);
+
+                        Article::create([
+                            'title' => $title,
+                            'content' => $snippet ?: $title,
+                            'author' => $source,
+                            'category' => $category,
+                            'thumbnail' => $thumbnail,
+                            'country' => $countryName,
+                            'source' => $source,
+                            'sentiment' => 'Neutral', // initial value
+                            'risk_level' => 'Low', // initial value
+                            'published_at' => $pubDate,
+                        ]);
+
+                        $importedCount++;
+                        if ($importedCount >= 10) break; // Limit to 10 articles per import to avoid overloading
+                    }
+                    return redirect()->route('admin.articles')->with('success', "Successfully imported $importedCount articles from News API.");
+                }
+            }
+        } catch (\Exception $e) {
+            return redirect()->route('admin.articles')->with('error', 'Failed to import articles: ' . $e->getMessage());
+        }
+        return redirect()->route('admin.articles')->with('error', 'Could not parse any articles from the News API.');
+    }
+
+    public function analyzeArticles()
+    {
+        $articles = Article::all();
+        $analyzedCount = 0;
+
+        foreach ($articles as $art) {
+            // Sentiment analysis
+            $sentiment = self::getArticleSentiment($art->title);
+
+            // Risk level analysis
+            $titleLower = strtolower($art->title);
+            $contentLower = strtolower($art->content);
+            $text = $titleLower . ' ' . $contentLower;
+
+            $highRiskWords = ['crisis', 'war', 'strike', 'disruption', 'delay', 'inflation', 'shortage', 'tension', 'conflict', 'recession', 'shut down', 'blocked'];
+            $mediumRiskWords = ['slowdown', 'challenge', 'rise', 'change', 'alert', 'impact', 'concern', 'pressure'];
+
+            $highCount = 0;
+            $medCount = 0;
+
+            foreach ($highRiskWords as $word) {
+                if (str_contains($text, $word)) $highCount++;
+            }
+            foreach ($mediumRiskWords as $word) {
+                if (str_contains($text, $word)) $medCount++;
+            }
+
+            $riskLevel = 'Low';
+            if ($highCount > 0) {
+                $riskLevel = 'High';
+            } elseif ($medCount > 0) {
+                $riskLevel = 'Medium';
+            }
+
+            $art->update([
+                'sentiment' => $sentiment,
+                'risk_level' => $riskLevel,
+            ]);
+
+            $analyzedCount++;
+        }
+
+        return redirect()->route('admin.articles')->with('success', "AI Analysis completed successfully. Analyzed $analyzedCount articles.");
     }
 }

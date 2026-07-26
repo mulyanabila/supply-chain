@@ -30,8 +30,9 @@
     /* Headlines */
     .headline-card { display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid #f0f0f0; transition: 0.2s; }
     .headline-card:hover { background: #fafafa; }
+    .headline-card:hover h6 { color: #0b3c5d; }
     .headline-card:last-child { border-bottom: none; }
-    .headline-img { width: 140px; height: 90px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .headline-img { width: 140px; aspect-ratio: 16/9; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
     
     /* Badge Colors */
     .badge-logistics { background: #e0f2fe; color: #0284c7; }
@@ -50,8 +51,10 @@
     /* Breaking Timeline */
     .timeline { position: relative; padding-left: 20px; }
     .timeline::before { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 2px; background: #eee; }
-    .timeline-item { position: relative; margin-bottom: 15px; }
-    .timeline-item::before { content: ''; position: absolute; left: -20px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #dc2626; border: 2px solid #fff; box-shadow: 0 0 0 1px #dc2626; }
+    .timeline-item { position: relative; margin-bottom: 15px; display: block; text-decoration: none; padding: 5px; border-radius: 6px; transition: 0.2s; }
+    .timeline-item:hover { background: #f1f5f9; }
+    .timeline-item:hover .fw-semibold { color: #dc2626; }
+    .timeline-item::before { content: ''; position: absolute; left: -20px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: #dc2626; border: 2px solid #fff; box-shadow: 0 0 0 1px #dc2626; }
     
     /* Table */
     .table-sm th { font-size: 12px; color: #6c757d; font-weight: 600; text-transform: uppercase; padding: 12px; }
@@ -167,7 +170,7 @@
                 <div>
                     <div class="text-muted small fw-bold">Breaking News</div>
                     <div class="fw-bold fs-3 lh-1" id="stat-break">0</div>
-                    <div class="small" style="font-size:11px;"><a href="#" class="text-decoration-none">View all &rarr;</a></div>
+                    <div class="small" style="font-size:11px;"><a href="#" id="metric-breaking-view-all" class="text-decoration-none">View all &rarr;</a></div>
                 </div>
             </div>
         </div>
@@ -180,7 +183,7 @@
             <div class="card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h6 class="fw-bold m-0">Top Headlines</h6>
-                    <a href="#" class="text-decoration-none small">View all news &rarr;</a>
+                    <a href="#" id="view-all-news" class="text-decoration-none small">View all news &rarr;</a>
                 </div>
                 
                 <div id="headlines-container">
@@ -204,7 +207,7 @@
             <div class="card p-3 mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="fw-bold m-0" style="font-size:13px;">Latest Breaking News</h6>
-                    <a href="#" class="text-decoration-none" style="font-size:11px;">View all &rarr;</a>
+                    <a href="#" id="view-all-breaking" class="text-decoration-none" style="font-size:11px;">View all &rarr;</a>
                 </div>
                 <div class="timeline" id="breaking-container">
                     <!-- Populated by JS -->
@@ -243,17 +246,47 @@
     }
 
     let allArticles = [];
+    let showAllHeadlines = false;
+    let currentFilter = 'All'; // 'All', Category name, or 'Breaking'
+    let searchQuery = '';
+
+    const placeholderImage = "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='100%25' height='100%25' fill='%23e2e8f0'/%3E%3Cpath d='M3 2.5h10v1H3v-1zm0 2h10v1H3v-1zm0 2h6v1H3v-1z' fill='%2394a3b8'/%3E%3C/svg%3E";
+
+    function applyFiltersAndRender() {
+        let filtered = allArticles;
+
+        // Apply Category or Breaking filter
+        if (currentFilter === 'Breaking') {
+            filtered = filtered.filter(a => a.sentiment === 'Negative');
+        } else if (currentFilter !== 'All') {
+            filtered = filtered.filter(a => a.category === currentFilter);
+        }
+
+        // Apply Search query
+        if (searchQuery !== '') {
+            filtered = filtered.filter(a => 
+                a.title.toLowerCase().includes(searchQuery) || 
+                a.snippet.toLowerCase().includes(searchQuery) || 
+                a.source.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        renderHeadlinesAndTable(filtered);
+    }
 
     function renderHeadlinesAndTable(articlesToRender) {
-        // Top Headlines (Take first 4)
+        // Top Headlines
         let hlHtml = '';
-        articlesToRender.slice(0, 4).forEach(a => {
+        const limit = showAllHeadlines ? articlesToRender.length : 4;
+        
+        articlesToRender.slice(0, limit).forEach(a => {
+            const imgSrc = a.image ? a.image : placeholderImage;
             hlHtml += `
-            <div class="headline-card">
-                <img src="${a.image}" class="headline-img">
+            <a href="${a.link}" target="_blank" class="headline-card text-decoration-none text-dark">
+                <img src="${imgSrc}" class="headline-img" onerror="this.onerror=null; this.src='${placeholderImage}';">
                 <div class="w-100 d-flex flex-column justify-content-between">
                     <div>
-                        <h6 class="fw-bold mb-1" style="font-size:14px;">${a.title}</h6>
+                        <h6 class="fw-bold mb-1" style="font-size:14px; transition: 0.2s;">${a.title}</h6>
                         <p class="text-muted m-0" style="font-size:12px;">${a.snippet}</p>
                     </div>
                     <div class="d-flex justify-content-between align-items-end mt-2">
@@ -261,12 +294,15 @@
                             <span class="fw-semibold text-dark">${a.source}</span> &bull; ${a.date}
                             <span class="badge ${getBadgeClass(a.category)} border-0 ms-2">${a.category}</span>
                         </div>
-                        <span class="badge badge-${a.sentiment.toLowerCase()} border-0">${a.sentiment}</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge badge-${a.sentiment.toLowerCase()} border-0">${a.sentiment}</span>
+                            <span class="btn btn-sm btn-outline-primary py-1 px-2 fw-semibold" style="font-size: 11px; padding: 2px 8px !important; border-radius: 4px;">Read More <i class="bi bi-box-arrow-up-right" style="font-size: 10px;"></i></span>
+                        </div>
                     </div>
                 </div>
-            </div>`;
+            </a>`;
         });
-        if(articlesToRender.length === 0) hlHtml = '<div class="text-muted p-4">No news found for this category.</div>';
+        if(articlesToRender.length === 0) hlHtml = '<div class="text-muted p-4">No news found matching the criteria.</div>';
         document.getElementById('headlines-container').innerHTML = hlHtml;
     }
 
@@ -281,15 +317,53 @@
             this.classList.remove('btn-light', 'bg-white', 'border');
             this.classList.add('btn-primary');
 
-            const cat = this.getAttribute('data-category');
-            if (cat === 'All') {
-                renderHeadlinesAndTable(allArticles);
-            } else {
-                const filtered = allArticles.filter(a => a.category === cat);
-                renderHeadlinesAndTable(filtered);
-            }
+            currentFilter = this.getAttribute('data-category');
+            applyFiltersAndRender();
         });
     });
+
+    // Globally exposed filter function for Trending Topics click handler
+    window.filterByCategory = function(cat) {
+        const btn = document.querySelector(`.cat-btn[data-category="${cat}"]`);
+        if (btn) {
+            btn.click();
+        }
+    };
+
+    // Filter breaking news (negative sentiment news)
+    function filterBreakingNews(e) {
+        if (e) e.preventDefault();
+        
+        // Remove active class from all category buttons
+        document.querySelectorAll('.cat-btn').forEach(b => {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-light', 'bg-white', 'border');
+        });
+        
+        currentFilter = 'Breaking';
+        applyFiltersAndRender();
+    }
+
+    // Bind Breaking News filter triggers
+    document.getElementById('view-all-breaking').addEventListener('click', filterBreakingNews);
+    document.getElementById('metric-breaking-view-all').addEventListener('click', filterBreakingNews);
+
+    // Bind View All news toggle trigger
+    document.getElementById('view-all-news').addEventListener('click', function(e) {
+        e.preventDefault();
+        showAllHeadlines = !showAllHeadlines;
+        this.innerHTML = showAllHeadlines ? 'Show less &larr;' : 'View all news &rarr;';
+        applyFiltersAndRender();
+    });
+
+    // Bind Search Input dynamic filtering
+    const searchInput = document.querySelector('input[placeholder="Search news..."]');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            searchQuery = this.value.toLowerCase().trim();
+            applyFiltersAndRender();
+        });
+    }
 
     // Fetch News Data from our new API
     fetch(`/api/news/${countryName}`)
@@ -305,18 +379,17 @@
             document.getElementById('stat-neg').innerText = stats.negative;
             document.getElementById('stat-break').innerText = stats.breaking;
             
-            // 2. Top Headlines (Take first 4)
             // 2. Top Headlines
-            renderHeadlinesAndTable(allArticles);
+            applyFiltersAndRender();
             
             // 3. Trending Topics
             let trHtml = '';
             for (const [cat, count] of Object.entries(data.categories)) {
                 if(count > 0) {
                     trHtml += `
-                    <div class="trending-item">
+                    <div class="trending-item" onclick="filterByCategory('${cat}')" style="cursor: pointer;">
                         <span class="text-primary fw-semibold"># ${cat}</span>
-                        <span class="text-muted">${count} articles</span>
+                        <span class="text-muted hover-underline">${count} articles</span>
                     </div>`;
                 }
             }
@@ -326,14 +399,14 @@
             let brHtml = '';
             data.breaking_news.forEach(b => {
                 brHtml += `
-                <div class="timeline-item">
+                <a href="${b.link}" target="_blank" class="timeline-item">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-bold" style="font-size:11px;">Recent</span>
+                        <span class="fw-bold text-muted" style="font-size:11px;">Recent</span>
                         <span class="badge bg-danger text-white rounded-1" style="font-size:9px;">BREAKING</span>
                     </div>
                     <div class="fw-semibold lh-sm mb-1" style="font-size:12px;">${b.title}</div>
                     <div class="text-end"><span class="badge ${getBadgeClass(b.category)} border-0" style="font-size:9px;">${b.category}</span></div>
-                </div>`;
+                </a>`;
             });
             if(data.breaking_news.length === 0) {
                 brHtml = `<div class="text-muted small">No breaking news at the moment.</div>`;
@@ -372,7 +445,6 @@
                 legend: { position: 'top', fontSize: '10px', markers: {radius: 2} }
             }).render();
             
-
             // Hide Loader
             setTimeout(() => {
                 document.getElementById('loadingOverlay').style.display = 'none';

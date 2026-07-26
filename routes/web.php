@@ -45,8 +45,18 @@ Route::get('/admin/users', [AdminDashboardController::class, 'users'])
 Route::get('/admin/ports', [AdminDashboardController::class, 'ports'])
     ->name('admin.ports');
 
-Route::get('/admin/articles', [AdminDashboardController::class, 'articles'])
-    ->name('admin.articles');
+    Route::get('/admin/articles', [AdminDashboardController::class, 'articles'])
+        ->name('admin.articles');
+    Route::post('/admin/articles', [AdminDashboardController::class, 'storeArticle'])
+        ->name('admin.articles.store');
+    Route::put('/admin/articles/{id}', [AdminDashboardController::class, 'updateArticle'])
+        ->name('admin.articles.update');
+    Route::delete('/admin/articles/{id}', [AdminDashboardController::class, 'destroyArticle'])
+        ->name('admin.articles.destroy');
+    Route::post('/admin/articles/import', [AdminDashboardController::class, 'importArticles'])
+        ->name('admin.articles.import');
+    Route::post('/admin/articles/analyze', [AdminDashboardController::class, 'analyzeArticles'])
+        ->name('admin.articles.analyze');
 
     Route::get('/countries', [CountryController::class, 'index'])->name('countries');
     Route::get('/countries/sync', [CountryController::class, 'sync'])->name('countries.sync');

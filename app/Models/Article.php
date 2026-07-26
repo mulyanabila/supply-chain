@@ -11,6 +11,11 @@ class Article extends Model
         'content',
         'author',
         'category',
-        'published_at'
+        'published_at',
+        'thumbnail',
+        'country',
+        'source',
+        'sentiment',
+        'risk_level'
     ];
 }
