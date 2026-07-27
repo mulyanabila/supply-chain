@@ -31,6 +31,8 @@ return new class extends Migration
 
         $table->string('type')->nullable();
 
+        $table->string('status')->default('Normal');
+
         $table->timestamps();
 
     });
